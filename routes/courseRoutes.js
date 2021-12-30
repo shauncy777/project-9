@@ -9,13 +9,13 @@ const {User, Course} = require('../models');
 
 
 // Route that returns courses
-router.get('/courses', authenticateUser, asyncHandler( async (req, res) => {
+router.get('/courses',  asyncHandler( async (req, res) => {
     const course = await Course.findAll({
        include: [{
            model: User,
            as: 'User',
            attributes: {
-               exclude: ['createdAt','updatedAt']
+               exclude: ['password','createdAt','updatedAt']
            }
        }],
        attributes: {
@@ -30,9 +30,18 @@ router.get('/courses', authenticateUser, asyncHandler( async (req, res) => {
 }));
 
 // Route that returns specific course
-router.get('/courses/:id', authenticateUser, asyncHandler( async (req, res) => {
+router.get('/courses/:id', asyncHandler( async (req, res) => {
     const course = await Course.findByPk(req.params.id, {
-     Course
+        include: [{
+            model: User,
+            as: 'User',
+            attributes: {
+                exclude: ['password','createdAt','updatedAt']
+            }
+        }],
+        attributes: {
+            exclude: ['createdAt', 'updatedAt']
+        }
     });
     if (course) {
         res.status(200).json(course)
@@ -47,7 +56,7 @@ router.post('/courses', authenticateUser, asyncHandler(async (req,res) => {
     try {
         const course = await Course.create(newCourse);
         const { id } = course;
-        res.status(201).location(`/api/${course.id}`).end(); 
+        res.status(201).location(`/courses/api/${course.id}`).end(); 
     }
     catch (error){
         if (error.name === 'SequelizeValidationError' || error.name === 'SequelizeUniqueConstraintError') {
@@ -71,7 +80,7 @@ router.put('/courses/:id', authenticateUser, asyncHandler( async(req, res) => {
                 res.status(404).json({"message": "Course does not exist"}).end();
             }
         } else {
-            res.status(403).json({"message": "Access Denied. User does not have access to complete action"}).end();
+            res.status(403).json({"message": "Access Denied. User does not have access to complete this action"}).end();
         }
 
     } catch (error) {
@@ -93,7 +102,7 @@ router.delete('/courses/:id', authenticateUser, asyncHandler(async(req, res) => 
             await course.destroy();
             res.status(204).end();
         } else {
-            res.status(403).end();
+            res.status(403).json({"message": "Access Denied. User does not have acces to complete this action"}).end();
         } 
     } else {
         res.status(404).json({"message": "Page not found"});
